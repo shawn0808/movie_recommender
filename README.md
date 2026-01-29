@@ -1,21 +1,27 @@
 # Movie Recommendation System
 
-A collaborative filtering movie recommendation web application built with Flask and user-user collaborative filtering algorithm.
+A content-based movie recommendation web app built with Flask. Rate up to 5 movies (0–5), and get recommendations based on genre similarity.
+
+## Screenshots
+
+| Main view | Search / top movies | Rating modal |
+|-----------|---------------------|--------------|
+| ![Main view](screenshots/main.png) | ![Search](screenshots/search.png) | ![Rating modal](screenshots/rating-modal.png) |
+
+*To generate these screenshots: run the app (`python app.py`), then in another terminal run `pip install playwright && playwright install chromium && python scripts/capture_screenshots.py`.*
 
 ## Features
 
-- **User-User Collaborative Filtering**: Recommends movies based on similar users' preferences
-- **Interactive Web Interface**: Clean, modern UI to browse users and get recommendations
-- **Movie Metadata Integration**: Combines ratings with movie titles and genres
-- **Real-time Recommendations**: Fast API endpoints for getting personalized recommendations
+- **Content-based filtering**: Recommendations from your custom ratings using genre similarity.
+- **Custom ratings**: Search or pick from top movies, add up to 5 ratings (0–5), then get recommendations.
+- **Search & top movies**: Type to search; focus/click the empty search box to see top-rated movies.
+- **Rating modal**: Inline modal for entering ratings (no `prompt()`).
 
 ## Requirements
 
 - Python 3.7+
-- Flask 3.0.0
-- pandas 2.1.4
-- numpy 1.26.2
-- scikit-learn 1.3.2
+- Flask 2.0+
+- pandas, numpy, scikit-learn (see `requirements.txt`)
 
 ## Setup
 
@@ -24,72 +30,54 @@ A collaborative filtering movie recommendation web application built with Flask 
    pip install -r requirements.txt
    ```
 
-2. **Prepare your data files:**
-   - Place `ratings.csv` in the project root directory
-   - Place `movies.csv` in the project root directory
+2. **Data files:**  
+   Place `ratings.csv` and `movies.csv` in the project root.  
+   - `ratings.csv`: `userId`, `movieId`, `rating` (and optionally `timestamp`)  
+   - `movies.csv`: `movieId`, `title` (and optionally `genres`)
 
-   Expected CSV formats:
-   - `ratings.csv`: Should contain columns `userId`, `movieId`, `rating` (and optionally `timestamp`)
-   - `movies.csv`: Should contain columns `movieId`, `title` (and optionally `genres`)
-
-3. **Run the application:**
+3. **Run the app:**
    ```bash
    python app.py
    ```
 
-4. **Access the web interface:**
-   Open your browser and navigate to `http://localhost:5000`
+4. **Open the UI:**  
+   Go to **http://localhost:5001**
 
 ## Usage
 
-1. Select a user from the dropdown menu
-2. Optionally adjust the number of recommendations (default: 20)
-3. Click "Get Recommendations" to see personalized movie suggestions
-4. View the user's rating history in the left panel
-5. Browse recommended movies with predicted ratings in the right panel
+1. **Add ratings:** Use the search box (type at least 2 characters to search, or focus/click when empty to see top movies). Click a movie, enter a rating 0–5 in the modal, submit.
+2. Add up to 5 movies. Remove any with “Remove” if needed.
+3. Click **Get Recommendations** to see suggested movies with predicted ratings.
+4. Your ratings appear under “Your Ratings”; recommendations under “Recommended Movies”.
 
 ## API Endpoints
 
-- `GET /api/users` - Get list of all user IDs
-- `GET /api/movies/<movie_id>` - Get metadata for a specific movie
-- `GET /api/recommendations?userId=<id>&limit=<n>` - Get movie recommendations for a user
-- `GET /api/user-history?userId=<id>` - Get rating history for a user
-
-## Configuration
-
-Edit `app/config.py` to adjust:
-- `K_NEIGHBORS`: Number of similar users to consider (default: 30)
-- `MIN_OVERLAP`: Minimum common movies for similarity calculation (default: 5)
-- `N_RECOMMENDATIONS`: Default number of recommendations (default: 20)
-
-## Algorithm
-
-The recommendation system uses **User-User Collaborative Filtering**:
-
-1. **Similarity Calculation**: Computes Pearson correlation between users based on their movie ratings (mean-centered)
-2. **Neighbor Selection**: Selects top K most similar users with sufficient overlap
-3. **Rating Prediction**: Predicts ratings for unrated movies by aggregating similar users' ratings, weighted by similarity
-4. **Recommendation Ranking**: Returns top N movies sorted by predicted rating
+- `GET /api/search-movies?q=<query>&limit=<n>` – Search movies by title
+- `GET /api/top-movies?limit=<n>` – Top-rated movies
+- `POST /api/custom-recommendations` – Body: `{ "ratings": [ { "movieId": <id>, "rating": <0-5> }, ... ] }`
+- `GET /api/movies/<movie_id>` – Movie metadata
 
 ## Project Structure
 
 ```
 .
 ├── app/
-│   ├── __init__.py          # Flask app factory
-│   ├── config.py            # Configuration settings
-│   ├── data_loader.py        # CSV loading and data processing
-│   ├── recommender.py        # Collaborative filtering algorithm
-│   └── routes.py             # API endpoints
+│   ├── __init__.py
+│   ├── config.py
+│   ├── data_loader.py
+│   ├── recommender.py
+│   └── routes.py
+├── scripts/
+│   └── capture_screenshots.py   # Screenshots for README
 ├── templates/
-│   └── index.html           # Frontend UI
-├── app.py                   # Application entry point
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+│   └── index.html
+├── app.py
+├── requirements.txt
+├── screenshots/                  # README screenshots (generated by script)
+└── README.md
 ```
 
 ## Notes
 
-- The application loads all data into memory on startup for fast recommendations
-- Similarity scores are cached to improve performance for repeated queries
-- Movies in ratings.csv that don't exist in movies.csv will use fallback titles
+- The app loads data at startup; optional Parquet cache (`cache_ratings.parquet`, `cache_movies.parquet`) speeds this up.
+- Content-based logic uses genre vectors and cosine similarity in `app/recommender.py`.
